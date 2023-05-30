@@ -1,38 +1,16 @@
 import fillerMap from '../utils/fillerMap.js';
 import {
-    loadModel,
-    readAllFilesContent,
-    convertToEmbedding,
-    buildIndexing,
+    loadIndexFromFile,
     vectorSearch,
     getFillerID,
 } from '../utils/functions.js';
 
-async function returnMatchedFiller(text, top_k) {
+async function returnMatchedFiller(text, nearestNeighbors) {
     const DEBUG = true;
 
-    // -------------------------------
     // Load data to build the indexing
-    const numDimensions = 512; // the length of data point vector that will be indexed.
-    const maxElements = 10000; // the maximum number of data points.
-    const nearestNeighbors = top_k;
+    await loadIndexFromFile('./index.hnsw', DEBUG);
 
-    const model = await loadModel(DEBUG);
-    const { ids, contents } = await readAllFilesContent(
-        './data/to_process',
-        'json',
-        DEBUG
-    );
-    const embeddings = await convertToEmbedding(model, contents, DEBUG);
-
-    const indexing = buildIndexing(
-        numDimensions,
-        maxElements,
-        embeddings,
-        ids,
-        DEBUG
-    );
-    //--------------------------------
     // Pass the text into the vectorSearch function
     let result = await vectorSearch(
         text,
@@ -41,13 +19,14 @@ async function returnMatchedFiller(text, top_k) {
         nearestNeighbors,
         DEBUG
     );
-    //--------------------------------
 
     // Get the fillerText associated with the search result
     let start = performance.now();
     const fillers = result.neighbors.map((id) => {
         return fillerMap.get(getFillerID(id));
     });
+
+    // Add the fillerText to the 'result' object
     const resultWithFiller = { ...result, fillers };
 
     // Log the performance
@@ -64,4 +43,6 @@ async function returnMatchedFiller(text, top_k) {
 }
 
 const match = await returnMatchedFiller('Test', 1);
-console.log(match.fillers);
+const matchedFiller = match.fillers;
+
+console.log(matchedFiller);
