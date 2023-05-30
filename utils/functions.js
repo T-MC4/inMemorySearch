@@ -123,6 +123,33 @@ export function buildIndexing(
 }
 
 /**
+ * Build the indexing.
+ *
+ * @param {string} path - The number of dimensions
+ * @param {boolean} debug - Whether to print debug information
+ * @returns - The indexing
+ */
+export async function loadIndexFromFile(path, debug = false) {
+    const start = performance.now();
+
+    // Load index data from file
+    const indexData = await fs.readFile(path, 'utf8');
+    const parsedData = JSON.parse(indexData);
+
+    // Create a new index and load the data
+    const indexing = new HierarchicalNSW();
+    indexing.loadIndex(parsedData);
+
+    if (debug) {
+        console.log(
+            `\nLoading Index took ${performance.now() - start} milliseconds.`
+        );
+    }
+
+    return indexing;
+}
+
+/**
  * Create an ID for each page.
  *
  * @param {number} index - The index of the page
