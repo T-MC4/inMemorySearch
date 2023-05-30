@@ -32,7 +32,14 @@ async function ingestData() {
     const indexPath = './index.hnsw';
 
     // Save index to file
-    await fs.writeFile(indexPath, JSON.stringify(indexing.saveIndex()));
+    await fs.writeFile(
+        indexPath,
+        JSON
+            .stringify
+            // indexing.saveIndex()
+            // MODIFY TO MAKE IT LEGITIMATE
+            ()
+    );
 
     if (DEBUG) {
         console.log('Index saved to:', indexPath);
