@@ -34,11 +34,9 @@ async function ingestData() {
     // Save index to file
     await fs.writeFile(
         indexPath,
-        JSON
-            .stringify
-            // indexing.saveIndex()
-            // MODIFY TO MAKE IT LEGITIMATE
-            ()
+        JSON.stringify(
+            indexing.saveIndex() // MODIFY TO MAKE IT LEGITIMATE
+        )
     );
 
     if (DEBUG) {
