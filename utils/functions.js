@@ -19,7 +19,7 @@ import {
  *
  * @returns - The model
  */
-async function loadModel(debug = false) {
+export async function loadModel(debug = false) {
     const start = performance.now();
 
     const model = await encoder.load();
@@ -40,7 +40,7 @@ async function loadModel(debug = false) {
  * @param {boolean} debug - Whether to print debug information
  * @returns - The embedding - a 2D array
  */
-async function convertToEmbedding(model, texts, debug = false) {
+export async function convertToEmbedding(model, texts, debug = false) {
     const start = performance.now();
 
     const embeddings = await model.embed(texts);
@@ -68,7 +68,7 @@ async function convertToEmbedding(model, texts, debug = false) {
  * @param {boolean} debug - Whether to print debug information
  * @returns - The nearest neighbors which contains distances and IDs.
  */
-async function vectorSearch(
+export async function vectorSearch(
     sentences,
     model,
     indexing,
@@ -99,7 +99,7 @@ async function vectorSearch(
  * @param {boolean} debug - Whether to print debug information
  * @returns - The indexing
  */
-function buildIndexing(
+export function buildIndexing(
     numDimensions,
     maxElements,
     embeddings,
@@ -140,7 +140,7 @@ function createID(index, fillerID) {
  * @param {number} id - The ID
  * @returns - The filler ID
  */
-function getFillerID(id) {
+export function getFillerID(id) {
     return id % 100;
 }
 
@@ -152,7 +152,7 @@ function getFillerID(id) {
  * @param {boolean} debug - Whether to print debug information
  * @returns - Array which contains the page content and the ID.
  */
-async function readAllFilesContent(baseDir, extension, debug = false) {
+export async function readAllFilesContent(baseDir, extension, debug = false) {
     var start = performance.now();
     // Load data to build the indexing
     const arrayOfJSONFiles = await getFilesInDirectory(baseDir, extension);
@@ -264,5 +264,5 @@ async function main() {
     return matches;
 }
 
-const [match] = await main();
-console.log(match);
+// const [match] = await main();
+// console.log(match);
