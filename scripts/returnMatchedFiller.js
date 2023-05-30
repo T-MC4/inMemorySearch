@@ -5,11 +5,11 @@ import {
     getFillerID,
 } from '../utils/functions.js';
 
+// Load data to build the indexing
+const indexing = await loadIndexFromFile('./index.hnsw', DEBUG);
+
 async function returnMatchedFiller(text, nearestNeighbors) {
     const DEBUG = true;
-
-    // Load data to build the indexing
-    await loadIndexFromFile('./index.hnsw', DEBUG);
 
     // Pass the text into the vectorSearch function
     let result = await vectorSearch(
