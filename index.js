@@ -1,25 +1,17 @@
 // Import the required libraries
-import * as tf from "@tensorflow/tfjs";
-import * as tfn from "@tensorflow/tfjs-node";
-// import * as tfg from "@tensorflow/tfjs-node-gpu"; // if you have a GPU
-import * as encoder from "@tensorflow-models/universal-sentence-encoder";
-// Import the CPU and WebGL backends to increase performance
-import "@tensorflow/tfjs-backend-cpu";
-
-// Import the HNSW library
-import pkg from "hnswlib-node";
+import * as tf from '@tensorflow/tfjs'; // Need this of tfjs-node
+import * as tfn from '@tensorflow/tfjs-node'; // Need this to make queries 100x faster
+import * as encoder from '@tensorflow-models/universal-sentence-encoder';
+import '@tensorflow/tfjs-backend-cpu'; // Import the CPU and WebGL backends to increase performance
+import pkg from 'hnswlib-node'; // Import the HNSW library
 const { HierarchicalNSW } = pkg;
-
-// Import the file system library
-import path from "path";
-
-// Import the custom text and JSON loaders
+import path from 'path'; // Import the file system library
+import fs from 'fs/promises';
+import fillerMap from './fillerMap.js';
 import {
-	getFilesInDirectory,
-	readFileContent,
-} from "./customTextAndJSONLoaders.js";
-
-import fillerMap from "./fillerMap.js";
+    getFilesInDirectory,
+    readFileContent,
+} from './customTextAndJSONLoaders.js'; // Import the custom text and JSON loaders
 
 /**
  * Load the model from the tensorflow hub.
@@ -28,16 +20,16 @@ import fillerMap from "./fillerMap.js";
  * @returns - The model
  */
 async function loadModel(debug = false) {
-	const start = performance.now();
+    const start = performance.now();
 
-	const model = await encoder.load();
+    const model = await encoder.load();
 
-	if (debug) {
-		console.log(
-			`\nModel Loading took ${performance.now() - start} milliseconds.`
-		);
-	}
-	return model;
+    if (debug) {
+        console.log(
+            `\nModel Loading took ${performance.now() - start} milliseconds.`
+        );
+    }
+    return model;
 }
 
 /**
@@ -49,21 +41,21 @@ async function loadModel(debug = false) {
  * @returns - The embedding - a 2D array
  */
 async function convertToEmbedding(model, texts, debug = false) {
-	const start = performance.now();
+    const start = performance.now();
 
-	const embeddings = await model.embed(texts);
-	const embeddingArray = await embeddings.array();
+    const embeddings = await model.embed(texts);
+    const embeddingArray = await embeddings.array();
 
-	embeddings.dispose(); // Clean up the memory
+    embeddings.dispose(); // Clean up the memory
 
-	if (debug) {
-		console.log(
-			`\nEmbedding took ${performance.now() - start} milliseconds. shape ${
-				embeddingArray.length
-			}`
-		);
-	}
-	return embeddingArray;
+    if (debug) {
+        console.log(
+            `\nEmbedding took ${
+                performance.now() - start
+            } milliseconds. shape ${embeddingArray.length}`
+        );
+    }
+    return embeddingArray;
 }
 
 /**
@@ -76,24 +68,25 @@ async function convertToEmbedding(model, texts, debug = false) {
  * @param {boolean} debug - Whether to print debug information
  * @returns - The nearest neighbors which contains distances and IDs.
  */
-async function search(
-	sentences,
-	model,
-	indexing,
-	nearestNeighbors,
-	debug = false
+async function vectorSearch(
+    sentences,
+    model,
+    indexing,
+    nearestNeighbors,
+    debug = false
 ) {
-	// Convert the sentence to an embedding.
-	const queryVector = await convertToEmbedding(model, sentences, debug);
+    // Convert the sentence to an embedding.
+    const queryVector = await convertToEmbedding(model, sentences, debug);
 
-	const start = performance.now();
+    const start = performance.now();
 
-	const result = indexing.searchKnn(queryVector[0], nearestNeighbors);
+    const result = indexing.searchKnn(queryVector[0], nearestNeighbors);
 
-	if (debug) {
-		console.log(`\nSearch took ${performance.now() - start} milliseconds.`);
-	}
-	return result;
+    if (debug) {
+        console.log(`\nSearch took ${performance.now() - start} milliseconds.`);
+    }
+
+    return result;
 }
 
 /**
@@ -107,26 +100,26 @@ async function search(
  * @returns - The indexing
  */
 function buildIndexing(
-	numDimensions,
-	maxElements,
-	embeddings,
-	IDs,
-	debug = false
+    numDimensions,
+    maxElements,
+    embeddings,
+    IDs,
+    debug = false
 ) {
-	const start = performance.now();
+    const start = performance.now();
 
-	const indexing = new HierarchicalNSW("l2", numDimensions);
-	indexing.initIndex(maxElements);
-	embeddings.forEach((embedding, index) => {
-		indexing.addPoint(embedding, IDs[index]);
-	});
+    const indexing = new HierarchicalNSW('l2', numDimensions);
+    indexing.initIndex(maxElements);
+    embeddings.forEach((embedding, index) => {
+        indexing.addPoint(embedding, IDs[index]);
+    });
 
-	if (debug) {
-		console.log(
-			`\nBuilding Index took ${performance.now() - start} milliseconds.`
-		);
-	}
-	return indexing;
+    if (debug) {
+        console.log(
+            `\nBuilding Index took ${performance.now() - start} milliseconds.`
+        );
+    }
+    return indexing;
 }
 
 /**
@@ -137,8 +130,8 @@ function buildIndexing(
  * @returns - The ID
  */
 function createID(index, fillerID) {
-	const id = index * 100 + fillerID;
-	return id;
+    const id = index * 100 + fillerID;
+    return id;
 }
 
 /**
@@ -148,7 +141,7 @@ function createID(index, fillerID) {
  * @returns - The filler ID
  */
 function getFillerID(id) {
-	return id % 100;
+    return id % 100;
 }
 
 /**
@@ -160,84 +153,116 @@ function getFillerID(id) {
  * @returns - Array which contains the page content and the ID.
  */
 async function readAllFilesContent(baseDir, extension, debug = false) {
-	var start = performance.now();
-	// Load data to build the indexing
-	const arrayOfJSONFiles = await getFilesInDirectory(baseDir, extension);
+    var start = performance.now();
+    // Load data to build the indexing
+    const arrayOfJSONFiles = await getFilesInDirectory(baseDir, extension);
 
-	var jsonContent = [];
+    var jsonContent = [];
 
-	// Read all the files
-	for (const fileName of arrayOfJSONFiles) {
-		const filePath = path.join(baseDir, fileName);
-		const content = await readFileContent(filePath);
-		jsonContent = [...jsonContent, ...JSON.parse(content)];
-	}
-	const contents = [];
-	const ids = [];
-	jsonContent.forEach((entry, index) => {
-		contents.push(entry.pageContent);
-		ids.push(createID(index, entry.metadata.fillerID));
-	});
+    // Process all the new files
+    for (const fileName of arrayOfJSONFiles) {
+        // Read the contents
+        const filePath = path.join(baseDir, fileName);
+        const content = await readFileContent(filePath);
+        jsonContent = [...jsonContent, ...JSON.parse(content)];
 
-	if (debug) {
-		console.log(
-			`\nReading all files took ${performance.now() - start} milliseconds.`
-		);
-	}
-	return {
-		contents,
-		ids,
-	};
+        // Move file to 'processed' folder indicate it's done
+        const destPath = `./data/processed/${fileName}`;
+        await fs.rename(filePath, destPath);
+        console.log('File Read & Moved successfully');
+    }
+
+    // Load the existing index
+    const contents = [];
+    const ids = [];
+
+    // Update the existing index
+    jsonContent.forEach((entry, index) => {
+        contents.push(entry.pageContent);
+        ids.push(createID(index, entry.metadata.fillerID));
+    });
+
+    if (debug) {
+        console.log(
+            `\nReading all files took ${
+                performance.now() - start
+            } milliseconds.`
+        );
+    }
+    return {
+        contents,
+        ids,
+    };
 }
 
 async function main() {
-	const DEBUG = true;
-	// Load data to build the indexing
+    const DEBUG = true;
+    // Load data to build the indexing
 
-	const numDimensions = 512; // the length of data point vector that will be indexed.
-	const maxElements = 10000; // the maximum number of data points.
-	const nearestNeighbors = 3;
+    const numDimensions = 512; // the length of data point vector that will be indexed.
+    const maxElements = 10000; // the maximum number of data points.
+    const nearestNeighbors = 3;
 
-	const model = await loadModel(DEBUG);
-	const { ids, contents } = await readAllFilesContent("./data/", "json", DEBUG);
-	const embeddings = await convertToEmbedding(model, contents, DEBUG);
+    const model = await loadModel(DEBUG);
+    const { ids, contents } = await readAllFilesContent(
+        './data/to_process',
+        'json',
+        DEBUG
+    );
+    const embeddings = await convertToEmbedding(model, contents, DEBUG);
 
-	const indexing = buildIndexing(
-		numDimensions,
-		maxElements,
-		embeddings,
-		ids,
-		DEBUG
-	);
+    const indexing = buildIndexing(
+        numDimensions,
+        maxElements,
+        embeddings,
+        ids,
+        DEBUG
+    );
 
-	// Perform a nearest neighbor search
-	const sentence = [
-		`I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary
-      is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following
-      CPU instructions in performance-critical operations:  AVX2 FMA
+    // Perform a nearest neighbor search
+    const sentence = [
+        `I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary
+		is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following
+		CPU instructions in performance-critical operations:  AVX2 FMA
       I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary
       is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following
       CPU instructions in performance-critical operations:  AVX2 FMAoperations:  AVX2 FMA`,
-		"Yeah.",
-	];
+        // 'Yeah.',
+    ];
 
-	sentence.map(async (text) => {
-		var result = await search([text], model, indexing, nearestNeighbors, DEBUG);
-		var start = performance.now();
-		const fillers = result.neighbors.map((id) => {
-			return fillerMap.get(getFillerID(id));
-		});
-		result = { ...result, fillers };
-		console.table(result);
-		if (DEBUG) {
-			console.log(
-				`\nSearching post processing took ${
-					performance.now() - start
-				} milliseconds.`
-			);
-		}
-	});
+    // Push top_k fillerText values here
+    const matches = [];
+
+    for (let text of sentence) {
+        // Perform the vector search
+        let result = await vectorSearch(
+            [text],
+            model,
+            indexing,
+            nearestNeighbors,
+            DEBUG
+        );
+
+        // Get the fillerText associated with the search result
+        let start = performance.now();
+        const fillers = result.neighbors.map((id) => {
+            return fillerMap.get(getFillerID(id));
+        });
+        const resultWithFiller = { ...result, fillers };
+        matches.push(resultWithFiller);
+
+        // Log the performance
+        console.table(result);
+        if (DEBUG) {
+            console.log(
+                `\nSearching post processing took ${
+                    performance.now() - start
+                } milliseconds (ie. converting embedding ID into fillerText value).`
+            );
+        }
+    }
+    return matches;
 }
 
-const result = await main();
-console.log(result);
+const [match] = await main();
+console.log(match);
